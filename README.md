@@ -1,4 +1,4 @@
-# LM Studio Chat – Lokal & im Netzwerk
+Localhorst KI-Chat – Lokal & im Netzwerk
 
 Eine **einzige HTML-Datei**, die man direkt im Browser öffnet, um mit Modellen aus [LM Studio](https://lmstudio.ai/) zu chatten – auf demselben Rechner oder von jedem Gerät im Heimnetzwerk. Kein Server, kein Build-Prozess, keine externen Abhängigkeiten, kein CDN. Einfach herunterladen, öffnen, loschatten.
 
