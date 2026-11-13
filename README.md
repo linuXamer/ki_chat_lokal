@@ -1,51 +1,77 @@
-# LM Studio Chat – Lokal & im Netzwerk
+# LocalhorstKI 🐦
 
-Eine **einzige HTML-Datei**, die man direkt im Browser öffnet, um mit Modellen aus [LM Studio](https://lmstudio.ai/) zu chatten – auf demselben Rechner oder von jedem Gerät im Heimnetzwerk. Kein Server, kein Build-Prozess, keine externen Abhängigkeiten, kein CDN. Einfach herunterladen, öffnen, loschatten.
+**Der Ein-Datei-Chat für deine KI – im Heimnetz oder in der Cloud.**
 
-> **Datenschutz:** Alle Anfragen gehen direkt vom Browser an deinen LM-Studio-Server – nichts verlässt dein Netzwerk.
+Eine einzige HTML-Datei, die man direkt im Browser öffnet, um mit lokalen Modellen zu chatten – oder über die Server-Profile auch mit Cloud-APIs wie Mistral. Kein Server, kein Build-Prozess, keine externen Abhängigkeiten, kein CDN. Einfach herunterladen, öffnen, loschatten.
+
+> **Datenschutz:** Mit lokalen Servern (LM Studio, Ollama, llama.cpp …) gehen alle Anfragen direkt vom Browser an dein Gerät – nichts verlässt dein Netzwerk. Bei Cloud-Profilen zeigt die Seite das ausdrücklich an.
+
+## Warum „LocalhorstKI"? 🤔
+
+*Localhost* – die Adresse, unter der jeder Homelab-Nerd zuhause ist – trifft auf *Horst* (deutscher Vorname, und zugleich der Nestbau-Ort des Wanderfalken 🐦) und *KI*. Der Name ist Programm: **Dein Rechner ist das Nest, deine Modelle wohnen drin.**
+
+## Warum heißt es nicht mehr „LM Studio Chat"? (Projekt-Geschichte)
+
+Dieses Projekt ist **aus der Praxis mit LM Studio entstanden**: Ich wollte eine einfache Webseite, die ich im Browser aufrufen kann, um direkt mit dem LM-Studio-Server in meinem Heimnetzwerk zu reden – inklusive Modell-Auswahl aus einer Auswahlliste. LM Studio war also der Anlass und bleibt der primäre Anwendungsfall (die Setup-Hinweise im Tool beziehen sich darauf).
+
+Zwei Gründe für den neutralen Namen:
+
+1. **Markenrecht:** „LM Studio" ist der Produktname von [lmstudio.ai](https://lmstudio.ai). Ein Drittanbieter-Projekt unter diesem Namen könnte wie eine offizielle Verbindung aussehen. LM Studio wird hier nur als *kompatibles Backend* genannt.
+2. **Technik:** Die Seite spricht die OpenAI-kompatible API (`/v1/models`, `/v1/chat/completions`) – dieselbe Schnittstelle bieten viele Server und Cloud-APIs an. Der Name soll das widerspiegeln.
 
 ## ✨ Features
 
-- 🎛️ **Modell-Auswahl per Dropdown** – die Modelle werden live vom Server geladen (`/v1/models`)
+- 🎛️ **Modell-Auswahl per Dropdown** – Modelle werden live vom Server geladen
 - 🌊 **Live-Streaming** der Antworten, jederzeit stoppbar
-- 📊 **Statistiken** pro Antwort: Token-Anzahl, Tokens/Sekunde, Dauer
+- 📊 **Statistiken** pro Antwort: Token-Anzahl, Tokens/Sekunde, Dauer (soweit vom Server geliefert)
 - ⚙️ **Modell-Parameter**: Temperature, Top-P, Top-K, Seed, Max. Tokens, System-Prompt (mit Vorlagen)
-- 🖥️ **Server-Profile** – mehrere LM-Studio-Rechner speichern und per Dropdown wechseln
+- 🖥️ **Server-Profile** – mehrere Server speichern und per Dropdown wechseln, z. B. LM Studio im Büro, Ollama auf dem Homeserver, Mistral in der Cloud
+- ☁️ **Cloud-Kennzeichnung**: HTTPS-Profile werden als Cloud erkannt – mit Warnhinweis („Anfragen verlassen dein Heimnetz") und kompatibler Parameter-Auswahl (LM-Studio-Extras wie Top-K/Seed werden dann nicht gesendet)
 - 📎 **Datei-Anhänge** – zwei Sorten:
   - **Bilder** (für Vision-Modelle): per 📎-Button, Strg+V (Screenshot) oder Drag & Drop
-  - **Textdateien** (`.txt`, `.md`, `.json`, `.csv`, Code, Logs … bis 512 KB): der Inhalt wird mit Dateinamen in die Nachricht eingebettet und funktioniert so mit **jedem** Modell – auch ohne Vision-Fähigkeiten. PDFs o. ä. Binärdateien müssen erst in Text umgewandelt werden.
+  - **Textdateien** (`.txt`, `.md`, `.json`, `.csv`, Code, Logs … bis 512 KB): der Inhalt wird mit Dateinamen in die Nachricht eingebettet und funktioniert so mit **jedem** Modell. PDFs u. ä. Binärdateien müssen erst in Text umgewandelt werden.
 - 🗂️ **Chat-Verläufe** – mehrere Konversationen, gespeichert im Browser (localStorage)
 - 📋 **Kopieren** (ganze Antwort oder einzelne Codeblöcke), **Neu generieren**, **Bearbeiten**
 - ⬇️ Chat als **Markdown** oder **JSON** exportieren
-- 🎨 **Akzentfarbe frei wählbar** (6 Presets + eigener Farbwähler), zusätzlich 🌙/☀️ **Dark/Light-Theme** – beide werden gespeichert
+- 🎨 **Akzentfarbe frei wählbar** (6 Presets + eigener Farbwähler) und 🌙/☀️ **Dark/Light-Theme**
 - 🛡️ **Security**: siehe unten
 - 📱 Responsive – funktioniert auch auf dem Handy im WLAN
 
-## 🚀 Schnellstart
+## 🚀 Schnellstart (mit LM Studio)
 
-### 1. LM Studio vorbereiten
+1. LM Studio öffnen → Tab **Developer** → Modell laden → **Start Server**
+2. In den Server-Einstellungen aktivieren: ✅ **Serve on Local Network** und ✅ **Enable CORS**
+3. [`index.html`](index.html) herunterladen und per Doppelklick im Browser öffnen
+4. Links die Server-URL eintragen (z. B. `http://192.168.178.114:1234`) → **↻** → Modell auswählen
+5. Chatten! **Enter** = senden, **Shift+Enter** = neue Zeile
 
-1. LM Studio öffnen → Tab **Developer**
-2. Ein Modell laden
-3. **Start Server** klicken
-4. In den **Server-Einstellungen** aktivieren:
-   - ✅ **Serve on Local Network** (damit andere Geräte im Netz den Server erreichen)
-   - ✅ **Enable CORS** (damit die Webseite vom Browser aus auf den Server zugreifen darf – ohne das kommt nur „nicht erreichbar")
+## 🧩 Mit welchen KI-Servern kann man LocalhorstKI nutzen?
 
-Standard-Port: `1234`. Die Adresse deines Servers findest du in LM Studio (z. B. `http://192.168.178.114:1234`).
+Die Seite funktioniert mit **allem, was die OpenAI-kompatible Chat-API anbietet**. Ein Server-Profil anlegen (URL + ggf. API-Key), Modelle laden, fertig.
 
-### 2. Webseite öffnen
+| Backend | URL / Port | Anmerkung |
+|---|---|---|
+| **LM Studio** | `http://IP:1234` | Ursprung des Projekts; CORS in den Server-Einstellungen aktivieren |
+| **Ollama** | `http://IP:11434/v1` | OpenAI-Kompatibilität ist eingebaut; CORS per Umgebungsvariable `OLLAMA_ORIGINS=*` erlauben |
+| **llama.cpp** (`llama-server`) | `http://IP:8080` | OpenAI-kompatibel ab Werk |
+| **vLLM** | `http://IP:8000/v1` | vor allem für Server-Betrieb |
+| **Jan, llamafile, LM Studio-Alternativen** | jeweiliger Port | gleiche API-Familie, ausprobieren |
+| **Mistral API** | `https://api.mistral.ai/v1` + API-Key | ☁️ Cloud – verlässt dein Netzwerk |
+| **OpenRouter, Groq, DeepSeek u. a.** | jeweilige API-URL + Key | ☁️ Cloud – ebenfalls OpenAI-kompatibel |
 
-1. [`index.html`](index.html) herunterladen
-2. Datei per Doppelklick im Browser öffnen
-3. Links die Server-URL eintragen → **↻** klicken → Modell auswählen
-4. Chatten! **Enter** = senden, **Shift+Enter** = neue Zeile
+**Ehrliche Einschränkung:** Ob ein Server aus dem Browser erreichbar ist, entscheidet dessen **CORS-Politik**. Lokale Server kontrollierst du selbst (CORS einschalten, fertig). Cloud-APIs können Browser-Zugriffe einschränken – wenn die Verbindung scheitert, liegt es meist daran, nicht an der Seite.
 
-## 🔧 Technik & Voraussetzungen
+### Use-Case-Szenarien
 
-- LM Studio mit aktiviertem lokalen Server (OpenAI-kompatible API: `/v1/models`, `/v1/chat/completions`)
-- Die Seite spricht den Server über dessen **OpenAI-kompatible Endpunkte** an – funktioniert daher grundsätzlich auch mit anderen OpenAI-kompatiblen Servern im Netzwerk (z. B. llama.cpp, Ollama), sofern CORS aktiviert ist
-- Alles läuft im Browser: Einstellungen und Chats liegen im `localStorage` des Browsers
+- **Homelab:** LM Studio auf dem Gaming-PC, LocalhorstKI auf Handy/Laptop/Tablet im WLAN – jede Rückfrage an lokale Modelle ohne Installation.
+- **Zweiter Rechner:** Ollama auf dem Homeserver, dieselbe Datei, anderes Server-Profil.
+- **Cloud-Fähre:** Ein Mistral-Profil für Modelle, die lokal zu groß sind – die Seite kennzeichnet das Profil als Cloud, damit der Unterschied immer sichtbar bleibt.
+- **Familie/Freunde:** Einmal die Datei aushändigen, URL eintragen – keine Accounts, keine Installation.
+
+## 🔧 Technik
+
+- Reiner Browser-Client (HTML/CSS/JS in einer Datei), spricht `/v1/models` und `/v1/chat/completions` mit SSE-Streaming
+- Einstellungen und Chats liegen im `localStorage` des Browsers – die Datei selbst ändert sich nie
 
 ### 🛡️ Security
 
@@ -56,17 +82,18 @@ Unvertrauenswürdige Eingaben (Modellausgaben) werden als HTML gerendert – des
 - **Kein `eval`, kein `document.write`, kein `outerHTML`/`insertAdjacentHTML`**; Titel, Status und Fehler laufen über `textContent`.
 - **Fremdcode: keiner.** Keine Bibliotheken, kein CDN (u. a. deshalb kein DOMPurify – der eigene Renderer + CSP übernehmen das; das hält die Datei single-file und abhängigkeitsfrei).
 
-**Hinweis:** Änderungen am `<script>`- oder `<style>`-Block ändern die CSP-Hashes – sie müssen dann neu berechnet werden (siehe Commit-Historie bzw. `openssl`/`sha256` über den Block-Inhalt).
+**Hinweis:** Änderungen am `<script>`- oder `<style>`-Block ändern die CSP-Hashes – sie müssen dann neu berechnet werden (der Browser zeigt den erwarteten Hash in der Konsole, F12).
 
 ### Probleme?
 
 | Symptom | Lösung |
 |---|---|
-| „Nicht erreichbar" trotz laufendem Server | In LM Studio **Enable CORS** aktivieren und Server neu starten |
+| „Nicht erreichbar" trotz laufendem Server | CORS aktivieren (LM Studio: **Enable CORS** · Ollama: `OLLAMA_ORIGINS`) und Server neu starten |
 | Nur vom selben PC erreichbar | **Serve on Local Network** aktivieren; Firewall/Portfreigabe prüfen |
-| Kein Modell in der Auswahl | Server ist erreichbar, aber es ist kein Modell geladen – Modell in LM Studio laden |
-| Verläufe weg | Andere Browser-Instanz/privater Modus – Verläufe liegen im `localStorage` des jeweiligen Browsers |
-| Seite blockiert nach eigener Änderung (weiß/nichts passiert) | CSP-Hashes im `<meta>` stimmen nicht mehr – neu berechnen oder Konsole (F12) zeigt den erwarteten Hash |
+| Cloud-Profil meldet Fehler | API-Key korrekt? URL mit `/v1`? Falls es an CORS liegt: Anbieter-Politik, nicht die Seite |
+| Kein Modell in der Auswahl | Server erreichbar, aber kein Modell geladen – Modell laden |
+| Seite blockiert nach eigener Änderung | CSP-Hashes im `<meta>` neu berechnen (Konsole zeigt den erwarteten Hash) |
+| Verläufe weg | Anderer Browser/privater Modus – Verläufe liegen im `localStorage` des jeweiligen Browsers |
 
 ## 📄 Über dieses Projekt / KI-Hinweis
 

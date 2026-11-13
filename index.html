@@ -4,8 +4,8 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>LM Studio Chat</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-8/jLTv0oGWdcEKGioWpCpZ2bM3MWDZwEcP0Kg9pqCHQ='; style-src 'sha256-TQLtsB+fSPfot5VC61Lvqoq1DgvehfptD0yyAt/1ck4='; img-src data: blob:; connect-src http: https:; base-uri 'none'; form-action 'none'; object-src 'none'">
+<title>LocalhorstKI</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-wLlWEBTWJ2lxxhw1C2kmLDB9Aqw+a8jnOpI/xcdMmZo='; style-src 'sha256-BgK1Rmd5CVyHHcEiD1Jlp7zgTyRjruUefA0uVST2e5M='; img-src data: blob:; connect-src http: https:; base-uri 'none'; form-action 'none'; object-src 'none'">
 <style>
   :root {
     --bg: #0f1117;
@@ -18,6 +18,7 @@
     --accent2: #4f6ee0;
     --ok: #3ddc84;
     --err: #ff6b6b;
+    --warn: #f0b34c;
     --codebg: #0b0d13;
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
@@ -32,6 +33,7 @@
     --accent2: #4f6ee0;
     --ok: #1d9e5c;
     --err: #d64545;
+    --warn: #b8860b;
     --codebg: #10131c;
   }
   * { box-sizing: border-box; }
@@ -220,6 +222,7 @@
   #menuBtn { display: none; }
   .hidden { display: none; }
   .version-badge { font-size: 11px; color: var(--muted); }
+  .cloud-note { font-size: 11px; color: var(--warn); margin-top: -4px; line-height: 1.5; }
   .chip {
     display: inline-flex; align-items: center; gap: 5px;
     background: var(--panel2); border: 1px solid var(--border);
@@ -236,8 +239,8 @@
 
 <aside id="sidebar">
   <div>
-    <h1>LM Studio Chat <span class="version-badge">v2</span></h1>
-    <div class="sub">OpenAI-kompatibler Chat für dein Netzwerk</div>
+    <h1>LocalhorstKI <span class="version-badge">v3</span></h1>
+    <div class="sub">KI-Chat für dein Netzwerk – LM Studio, Ollama, Mistral &amp; Co.</div>
   </div>
 
   <div class="sect">Server</div>
@@ -248,12 +251,13 @@
   </div>
   <div class="field">
     <label for="url">Server-URL</label>
-    <input id="url" placeholder="http://192.168.178.114:1234" />
+    <input id="url" placeholder="http://IP:1234 oder https://api.mistral.ai/v1" />
   </div>
   <div class="field">
     <label for="apiKey">API-Key (optional)</label>
-    <input id="apiKey" type="password" placeholder="lm-studio" />
+    <input id="apiKey" type="password" placeholder="lm-studio / Mistral-API-Key" />
   </div>
+  <div id="cloudNote" class="cloud-note hidden">☁️ Cloud-Profil: Anfragen verlassen dein Heimnetz. Extra-Parameter (Top-K, Seed) werden nicht gesendet.</div>
 
   <div class="field">
     <label>Modell</label>
@@ -336,8 +340,8 @@
   </div>
   <div id="messages">
     <div id="hint">
-      Trage links die Adresse deines LM-Studio-Servers ein<br />
-      (z.&nbsp;B. <b>http://192.168.178.114:1234</b>) und lade die Modelle.<br />
+      Trage links die Adresse deines KI-Servers ein und lade die Modelle.<br />
+      LM Studio: <b>http://IP:1234</b> · Ollama: <b>http://IP:11434/v1</b> · Mistral: <b>https://api.mistral.ai/v1</b><br />
       Enter = senden · Shift+Enter = neue Zeile · Anhänge (Bilder + Textdateien): 📎, Strg+V oder Drag&nbsp;&amp;&nbsp;Drop
     </div>
   </div>
@@ -428,7 +432,7 @@
       elSeed = $("seed"), elMaxTok = $("maxTok"), elSound = $("sound"),
       elConvos = $("convos"), elMsgs = $("messages"), elInput = $("input"),
       elSend = $("send"), elTopModel = $("topModel"), elHint = $("hint"),
-      elThumbs = $("thumbs"), elFile = $("file"), elThemeBtn = $("themeBtn");
+      elThumbs = $("thumbs"), elFile = $("file"), elThemeBtn = $("themeBtn"), elCloudNote = $("cloudNote");
 
   function prof() {
     if (settings.profileIdx >= settings.profiles.length) settings.profileIdx = 0;
@@ -738,6 +742,10 @@
       elTpl.appendChild(o);
     });
   }
+  function updateCloudNote() {
+    if (/^https:\/\//i.test(elUrl.value.trim())) elCloudNote.classList.remove("hidden");
+    else elCloudNote.classList.add("hidden");
+  }
 
   /* ---------- Modelle laden ---------- */
   function setStatus(text, cls) {
@@ -778,9 +786,9 @@
         elModel.innerHTML = "<option value=''>– nicht verbunden –</option>";
         var msg = e && e.message ? e.message : String(e);
         if (/Failed to fetch|NetworkError|Load failed/i.test(msg)) {
-          msg += " — Vermutlich CORS: In LM Studio → Developer → Settings → 'Enable CORS' aktivieren, Server neu starten.";
+          msg += " — Vermutlich CORS: Beim Server CORS aktivieren (LM Studio: Developer → Settings → Enable CORS · Ollama: OLLAMA_ORIGINS) und neu starten.";
         } else {
-          msg += " — Server in LM Studio gestartet?";
+          msg += " — Server gestartet? URL korrekt (Mistral: https://api.mistral.ai/v1)?";
         }
         setStatus("Nicht erreichbar (" + msg + ")", "err");
       });
@@ -888,8 +896,10 @@
       max_tokens: settings.maxTok > 0 ? settings.maxTok : -1,
       stream: true
     };
-    if (settings.topK > 0) body.top_k = settings.topK;
-    if (!isNaN(settings.seed) && settings.seed >= 0) body.seed = settings.seed;
+    if (!/^https:\/\//i.test(prof().url || "")) {
+      if (settings.topK > 0) body.top_k = settings.topK;
+      if (!isNaN(settings.seed) && settings.seed >= 0) body.seed = settings.seed;
+    }
 
     abortCtl = new AbortController();
     setGenerating(true);
@@ -982,7 +992,7 @@
         }
       } else {
         var msg = "Verbindung fehlgeschlagen: " + (e && e.message ? e.message : e) +
-          "\n\nCheckliste:\n• Läuft der LM-Studio-Server (Developer → Start)?\n• Im Netzwerk erreichbar (Firewall, richtige IP)?\n• CORS in den Server-Einstellungen aktiviert?";
+          "\n\nCheckliste:\n• Läuft der Server (LM Studio: Developer → Start · Ollama: ollama serve)?\n• Im Netzwerk erreichbar (Firewall, richtige IP)?\n• CORS aktiviert? Bei Cloud-APIs: Key und URL korrekt?";
         bubble.remove();
         var d = document.createElement("div");
         d.className = "msg assistant";
@@ -1118,6 +1128,7 @@
     settings.profileIdx = parseInt(elProf.value, 10) || 0;
     saveSettings();
     renderProfiles();
+    updateCloudNote();
     elTopModel.textContent = prof().model || "–";
     loadModels();
   });
@@ -1128,6 +1139,7 @@
     settings.profileIdx = settings.profiles.length - 1;
     saveSettings();
     renderProfiles();
+    updateCloudNote();
     loadModels();
   });
   $("profDel").addEventListener("click", function () {
@@ -1136,10 +1148,11 @@
     settings.profileIdx = 0;
     saveSettings();
     renderProfiles();
+    updateCloudNote();
     elTopModel.textContent = prof().model || "–";
     loadModels();
   });
-  elUrl.addEventListener("change", function () { prof().url = elUrl.value.trim(); saveSettings(); });
+  elUrl.addEventListener("change", function () { prof().url = elUrl.value.trim(); saveSettings(); updateCloudNote(); });
   elKey.addEventListener("change", function () { prof().apiKey = elKey.value.trim(); saveSettings(); });
   elModel.addEventListener("change", function () {
     prof().model = elModel.value;
@@ -1216,6 +1229,7 @@
   renderSwatches();
   renderTemplates();
   renderProfiles();
+  updateCloudNote();
   elSystem.value = settings.system || "";
   elTemp.value = settings.temp; elTempVal.textContent = settings.temp;
   elTopP.value = settings.topP; elTopPVal.textContent = settings.topP;
