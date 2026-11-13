@@ -5,7 +5,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>LM Studio Chat</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-PzgJLwo+gfI2RmiUpF7wqFE9zCGfD/nPlT43/wMbpgQ='; style-src 'sha256-OsovFyll3+LUV9Up6AyJsbcXyKMG5jeGVNpnYcFkrs8='; img-src data: blob:; connect-src http: https:; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-8/jLTv0oGWdcEKGioWpCpZ2bM3MWDZwEcP0Kg9pqCHQ='; style-src 'sha256-TQLtsB+fSPfot5VC61Lvqoq1DgvehfptD0yyAt/1ck4='; img-src data: blob:; connect-src http: https:; base-uri 'none'; form-action 'none'; object-src 'none'">
 <style>
   :root {
     --bg: #0f1117;
@@ -220,6 +220,16 @@
   #menuBtn { display: none; }
   .hidden { display: none; }
   .version-badge { font-size: 11px; color: var(--muted); }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--panel2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 5px 10px; font-size: 12px; color: var(--muted);
+  }
+  .msg.user .chip { background: rgba(255,255,255,.16); border-color: rgba(255,255,255,.3); color: #fff; }
+  .swatches { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
+  .sw { width: 26px; height: 26px; padding: 0; border-radius: 50%; border: 2px solid var(--border); cursor: pointer; }
+  .sw.active { border-color: var(--text); }
+  .sw-custom { width: 30px; height: 30px; padding: 0; border-radius: 50%; border: 1px solid var(--border); background: none; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -298,6 +308,14 @@
 
   <hr />
 
+  <div class="sect">Optik</div>
+  <div class="field">
+    <label>Akzentfarbe</label>
+    <div class="swatches" id="swatches"></div>
+  </div>
+
+  <hr />
+
   <div class="row">
     <button id="expMd" class="ghost" title="Aktuellen Chat als Markdown speichern">⬇ Markdown</button>
     <button id="expJson" class="ghost" title="Aktuellen Chat als JSON speichern">⬇ JSON</button>
@@ -320,16 +338,16 @@
     <div id="hint">
       Trage links die Adresse deines LM-Studio-Servers ein<br />
       (z.&nbsp;B. <b>http://192.168.178.114:1234</b>) und lade die Modelle.<br />
-      Enter = senden · Shift+Enter = neue Zeile · Bilder: 📎, Strg+V oder Drag&nbsp;&amp;&nbsp;Drop
+      Enter = senden · Shift+Enter = neue Zeile · Anhänge (Bilder + Textdateien): 📎, Strg+V oder Drag&nbsp;&amp;&nbsp;Drop
     </div>
   </div>
   <div id="thumbs"></div>
   <div id="composer">
-    <button id="attach" class="ghost" title="Bild anhängen (Vision-Modelle)">📎</button>
+    <button id="attach" class="ghost" title="Datei anhängen (Bilder oder Textdateien)">📎</button>
     <textarea id="input" placeholder="Nachricht schreiben…"></textarea>
     <button id="send">Senden</button>
   </div>
-  <input type="file" id="file" accept="image/*" multiple class="hidden" />
+  <input type="file" id="file" multiple class="hidden" />
 </main>
 
 <script>
@@ -350,13 +368,15 @@
     topK: 40,
     maxTok: 2048,
     seed: -1,
-    sound: false
+    sound: false,
+    accent: "#4f6ee0"
   };
   var convos = [];
   var currentId = null;
   var generating = false;
   var abortCtl = null;
   var pendingImages = [];
+  var pendingFiles = [];
   var quotaWarned = false;
 
   var TEMPLATES = [
@@ -608,6 +628,17 @@
         }
         body.appendChild(row);
       }
+      if (m.files && m.files.length) {
+        var frow = document.createElement("div");
+        frow.className = "att-row";
+        for (var k = 0; k < m.files.length; k++) {
+          var chip = document.createElement("span");
+          chip.className = "chip";
+          chip.textContent = "📄 " + m.files[k].name;
+          frow.appendChild(chip);
+        }
+        body.appendChild(frow);
+      }
     } else {
       body.innerHTML = mdToHtml(m.content);
       addCodeCopy(body);
@@ -755,10 +786,17 @@
       });
   }
 
-  /* ---------- Bilder ---------- */
+  /* ---------- Anhänge: Bilder + Textdateien ---------- */
+  var TEXT_EXTS = ["txt","md","markdown","json","csv","tsv","log","xml","yml","yaml","ini","conf","cfg","toml","env","py","js","mjs","ts","tsx","jsx","html","htm","css","scss","sh","bash","zsh","bat","ps1","java","c","h","cpp","hpp","cs","go","rs","rb","php","sql","lua","r","swift","kt","dart"];
+  function isTextFile(file) {
+    if (/^text\//.test(file.type)) return true;
+    if (file.type === "application/json" || file.type === "application/xml" || file.type === "application/yaml" || file.type === "application/toml") return true;
+    var ext = (file.name.split(".").pop() || "").toLowerCase();
+    return TEXT_EXTS.indexOf(ext) >= 0;
+  }
   function renderThumbs() {
     elThumbs.innerHTML = "";
-    if (!pendingImages.length) { elThumbs.classList.remove("has"); return; }
+    if (!pendingImages.length && !pendingFiles.length) { elThumbs.classList.remove("has"); return; }
     elThumbs.classList.add("has");
     pendingImages.forEach(function (src, i) {
       var t = document.createElement("div");
@@ -773,13 +811,38 @@
       t.appendChild(img); t.appendChild(rm);
       elThumbs.appendChild(t);
     });
+    pendingFiles.forEach(function (f, i) {
+      var t = document.createElement("div");
+      t.className = "thumb";
+      var chip = document.createElement("span");
+      chip.className = "chip";
+      chip.textContent = "📄 " + f.name + " (" + Math.max(1, Math.ceil(f.text.length / 1024)) + " KB)";
+      var rm = document.createElement("div");
+      rm.className = "rm";
+      rm.textContent = "×";
+      rm.title = "Datei entfernen";
+      rm.onclick = function () { pendingFiles.splice(i, 1); renderThumbs(); };
+      t.appendChild(chip); t.appendChild(rm);
+      elThumbs.appendChild(t);
+    });
   }
-  function addImage(file) {
-    if (!file || !/^image\//.test(file.type)) return;
-    if (file.size > 15 * 1024 * 1024) { alert("Bild ist größer als 15 MB – zu groß für die meisten Modelle."); return; }
-    var r = new FileReader();
-    r.onload = function () { pendingImages.push(r.result); renderThumbs(); };
-    r.readAsDataURL(file);
+  function addFile(file) {
+    if (!file) return;
+    if (/^image\//.test(file.type)) {
+      if (file.size > 15 * 1024 * 1024) { alert("Bild ist größer als 15 MB – zu groß für die meisten Modelle."); return; }
+      var ri = new FileReader();
+      ri.onload = function () { pendingImages.push(ri.result); renderThumbs(); };
+      ri.readAsDataURL(file);
+      return;
+    }
+    if (isTextFile(file)) {
+      if (file.size > 512 * 1024) { alert("Textdatei ist größer als 512 KB – zu groß für den Modellkontext. Bitte kürzen."); return; }
+      var rt = new FileReader();
+      rt.onload = function () { pendingFiles.push({ name: file.name, text: String(rt.result) }); renderThumbs(); };
+      rt.readAsText(file);
+      return;
+    }
+    alert("Nicht unterstützt: " + (file.name || file.type) + "\n\nAnhängbar sind Bilder (für Vision-Modelle) und Textdateien (.txt, .md, .json, Code, …). Binärdateien wie PDF, Word oder Excel müssen erst in Text umgewandelt werden.");
   }
 
   /* ---------- Generierung ---------- */
@@ -790,14 +853,20 @@
   }
 
   function apiContent(m) {
+    var text = m.content || " ";
+    if (m.files && m.files.length) {
+      for (var i = 0; i < m.files.length; i++) {
+        text += "\n\n--- Datei: " + m.files[i].name + " ---\n" + m.files[i].text + "\n--- Ende der Datei ---";
+      }
+    }
     if (m.images && m.images.length) {
-      var parts = [{ type: "text", text: m.content || " " }];
-      for (var i = 0; i < m.images.length; i++) {
-        parts.push({ type: "image_url", image_url: { url: m.images[i] } });
+      var parts = [{ type: "text", text: text }];
+      for (var j = 0; j < m.images.length; j++) {
+        parts.push({ type: "image_url", image_url: { url: m.images[j] } });
       }
       return parts;
     }
-    return m.content;
+    return text;
   }
 
   function generate(convo) {
@@ -938,20 +1007,21 @@
       return;
     }
     var text = elInput.value.trim();
-    if (!text && !pendingImages.length) return;
+    if (!text && !pendingImages.length && !pendingFiles.length) return;
     if (!prof().model) { setStatus("Bitte zuerst ein Modell laden.", "err"); loadModels(); return; }
     if (!currentConvo()) newChat();
 
     var convo = currentConvo();
-    var m = { role: "user", content: text, time: nowTime(), images: pendingImages.slice() };
+    var m = { role: "user", content: text, time: nowTime(), images: pendingImages.slice(), files: pendingFiles.slice() };
     convo.messages.push(m);
     convo.updated = Date.now();
     if (convo.title === "Neuer Chat") {
-      convo.title = text.length > 42 ? text.slice(0, 42) + "…" : (text || "Bild");
+      convo.title = text.length > 42 ? text.slice(0, 42) + "…" : (text || "Anhang");
     }
     elInput.value = "";
     autoGrow();
     pendingImages = [];
+    pendingFiles = [];
     renderThumbs();
     msgEl(m, false, false);
     scrollDown();
@@ -979,6 +1049,7 @@
     c.messages = c.messages.slice(0, idx);
     elInput.value = m.content;
     pendingImages = (m.images || []).slice();
+    pendingFiles = (m.files || []).slice();
     renderThumbs();
     saveConvos();
     renderMessages();
@@ -994,7 +1065,7 @@
     for (var i = 0; i < c.messages.length; i++) {
       var m = c.messages[i];
       out += "**" + (m.role === "user" ? "Du" : "Modell") + (m.time ? " (" + m.time + ")" : "") + ":**\n\n";
-      out += (m.content || "") + (m.images && m.images.length ? "\n\n*(Bild angehängt)*" : "") + "\n\n---\n\n";
+      out += (m.content || "") + (m.images && m.images.length ? "\n\n*(Bild angehängt)*" : "") + (m.files && m.files.length ? "\n\n*(Angehängte Dateien: " + m.files.map(function (f) { return f.name; }).join(", ") + ")*" : "") + "\n\n---\n\n";
     }
     dl((c.title || "chat").replace(/[^\w\-äöüÄÖÜß ]+/g, "_").slice(0, 40) + ".md", out, "text/markdown");
   }
@@ -1002,6 +1073,33 @@
     var c = currentConvo();
     if (!c) return;
     dl((c.title || "chat").replace(/[^\w\-äöüÄÖÜß ]+/g, "_").slice(0, 40) + ".json", JSON.stringify(c, null, 2), "application/json");
+  }
+
+  /* ---------- Akzentfarbe ---------- */
+  var ACCENTS = ["#4f6ee0", "#8b5cf6", "#0ea5a4", "#3ddc84", "#f59e0b", "#ef5777"];
+  function applyAccent() {
+    var c = settings.accent || "#4f6ee0";
+    document.documentElement.style.setProperty("--accent", c);
+    document.documentElement.style.setProperty("--accent2", c);
+  }
+  function renderSwatches() {
+    var sw = $("swatches");
+    sw.innerHTML = "";
+    ACCENTS.forEach(function (c) {
+      var b = document.createElement("button");
+      b.className = "sw" + (settings.accent === c ? " active" : "");
+      b.style.background = c;
+      b.title = c;
+      b.onclick = function () { settings.accent = c; saveSettings(); applyAccent(); renderSwatches(); };
+      sw.appendChild(b);
+    });
+    var inp = document.createElement("input");
+    inp.type = "color";
+    inp.className = "sw-custom";
+    inp.value = /^#[0-9a-fA-F]{6}$/.test(settings.accent) ? settings.accent : "#4f6ee0";
+    inp.title = "Eigene Farbe";
+    inp.addEventListener("change", function () { settings.accent = inp.value; saveSettings(); applyAccent(); renderSwatches(); });
+    sw.appendChild(inp);
   }
 
   /* ---------- Theme ---------- */
@@ -1087,11 +1185,11 @@
   elInput.addEventListener("input", autoGrow);
   $("menuBtn").addEventListener("click", function () { $("sidebar").classList.toggle("open"); });
 
-  /* Bilder: 📎, Paste, Drag & Drop */
+  /* Anhänge: 📎, Paste, Drag & Drop */
   $("attach").addEventListener("click", function () { elFile.click(); });
   elFile.addEventListener("change", function () {
     var files = elFile.files;
-    for (var i = 0; i < files.length; i++) addImage(files[i]);
+    for (var i = 0; i < files.length; i++) addFile(files[i]);
     elFile.value = "";
   });
   document.addEventListener("paste", function (ev) {
@@ -1100,7 +1198,7 @@
     for (var i = 0; i < items.length; i++) {
       if (items[i].type && items[i].type.indexOf("image") === 0) {
         var f = items[i].getAsFile();
-        if (f) addImage(f);
+        if (f) addFile(f);
       }
     }
   });
@@ -1108,12 +1206,14 @@
   window.addEventListener("drop", function (ev) {
     ev.preventDefault();
     if (!ev.dataTransfer || !ev.dataTransfer.files) return;
-    for (var i = 0; i < ev.dataTransfer.files.length; i++) addImage(ev.dataTransfer.files[i]);
+    for (var i = 0; i < ev.dataTransfer.files.length; i++) addFile(ev.dataTransfer.files[i]);
   });
 
   /* ---------- Start ---------- */
   load();
   applyTheme();
+  applyAccent();
+  renderSwatches();
   renderTemplates();
   renderProfiles();
   elSystem.value = settings.system || "";

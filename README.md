@@ -11,11 +11,13 @@ Eine **einzige HTML-Datei**, die man direkt im Browser öffnet, um mit Modellen 
 - 📊 **Statistiken** pro Antwort: Token-Anzahl, Tokens/Sekunde, Dauer
 - ⚙️ **Modell-Parameter**: Temperature, Top-P, Top-K, Seed, Max. Tokens, System-Prompt (mit Vorlagen)
 - 🖥️ **Server-Profile** – mehrere LM-Studio-Rechner speichern und per Dropdown wechseln
-- 🖼️ **Bild-Upload für Vision-Modelle** – per 📎-Button, Strg+V (Screenshot) oder Drag & Drop
+- 📎 **Datei-Anhänge** – zwei Sorten:
+  - **Bilder** (für Vision-Modelle): per 📎-Button, Strg+V (Screenshot) oder Drag & Drop
+  - **Textdateien** (`.txt`, `.md`, `.json`, `.csv`, Code, Logs … bis 512 KB): der Inhalt wird mit Dateinamen in die Nachricht eingebettet und funktioniert so mit **jedem** Modell – auch ohne Vision-Fähigkeiten. PDFs o. ä. Binärdateien müssen erst in Text umgewandelt werden.
 - 🗂️ **Chat-Verläufe** – mehrere Konversationen, gespeichert im Browser (localStorage)
 - 📋 **Kopieren** (ganze Antwort oder einzelne Codeblöcke), **Neu generieren**, **Bearbeiten**
 - ⬇️ Chat als **Markdown** oder **JSON** exportieren
-- 🌙/☀️ **Dark/Light-Theme**, Avatare, Zeitstempel, „denkt nach…"-Indikator, optionaler Fertigstellungs-Sound
+- 🎨 **Akzentfarbe frei wählbar** (6 Presets + eigener Farbwähler), zusätzlich 🌙/☀️ **Dark/Light-Theme** – beide werden gespeichert
 - 🛡️ **Security**: siehe unten
 - 📱 Responsive – funktioniert auch auf dem Handy im WLAN
 
@@ -64,6 +66,7 @@ Unvertrauenswürdige Eingaben (Modellausgaben) werden als HTML gerendert – des
 | Nur vom selben PC erreichbar | **Serve on Local Network** aktivieren; Firewall/Portfreigabe prüfen |
 | Kein Modell in der Auswahl | Server ist erreichbar, aber es ist kein Modell geladen – Modell in LM Studio laden |
 | Verläufe weg | Andere Browser-Instanz/privater Modus – Verläufe liegen im `localStorage` des jeweiligen Browsers |
+| Seite blockiert nach eigener Änderung (weiß/nichts passiert) | CSP-Hashes im `<meta>` stimmen nicht mehr – neu berechnen oder Konsole (F12) zeigt den erwarteten Hash |
 
 ## 📄 Über dieses Projekt / KI-Hinweis
 
