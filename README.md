@@ -24,9 +24,10 @@ Zwei Gründe für den neutralen Namen:
 - 🎛️ **Modell-Auswahl per Dropdown** – Modelle werden live vom Server geladen
 - 🌊 **Live-Streaming** der Antworten, jederzeit stoppbar
 - 📊 **Statistiken** pro Antwort: Token-Anzahl, Tokens/Sekunde, Dauer (soweit vom Server geliefert)
-- ⚙️ **Modell-Parameter**: Temperature, Top-P, Top-K, Seed, Max. Tokens, System-Prompt (mit Vorlagen)
+- ⚙️ **Modell-Parameter**: Temperature, Top-P, Top-K, Seed, Max. Tokens, System-Prompt (mit Vorlagen, z. B. Schreibhelfer/Textkorrektur)
 - 🖥️ **Server-Profile** – mehrere Server speichern und per Dropdown wechseln, z. B. LM Studio im Büro, Ollama auf dem Homeserver, Mistral in der Cloud
 - ☁️ **Cloud-Kennzeichnung**: HTTPS-Profile werden als Cloud erkannt – mit Warnhinweis („Anfragen verlassen dein Heimnetz") und kompatibler Parameter-Auswahl (LM-Studio-Extras wie Top-K/Seed werden dann nicht gesendet)
+- 🔗 **URL-Parameter** – Server, Modell & Vorlage per Link vorkonfigurieren (`?server=…&model=…&tpl=…`) – die Basis für die Starter-Scripts
 - 📎 **Datei-Anhänge** – zwei Sorten:
   - **Bilder** (für Vision-Modelle): per 📎-Button, Strg+V (Screenshot) oder Drag & Drop
   - **Textdateien** (`.txt`, `.md`, `.json`, `.csv`, Code, Logs … bis 512 KB): der Inhalt wird mit Dateinamen in die Nachricht eingebettet und funktioniert so mit **jedem** Modell. PDFs u. ä. Binärdateien müssen erst in Text umgewandelt werden.
@@ -44,6 +45,47 @@ Zwei Gründe für den neutralen Namen:
 3. [`index.html`](index.html) herunterladen und per Doppelklick im Browser öffnen
 4. Links die Server-URL eintragen (z. B. `http://192.168.178.114:1234`) → **↻** → Modell auswählen
 5. Chatten! **Enter** = senden, **Shift+Enter** = neue Zeile
+
+## ⚡ Ein-Klick-Start mit Ollama (Starter-Scripts)
+
+Für Ollama gibt es fertige Starter im Ordner [`starters/`](starters/): **ein Aufruf** – Ollama wird gestartet (falls nötig), das Modell geladen/pullt und LocalhorstKI öffnet sich im Browser, bereits mit Server, Modell und Vorlage vorkonfiguriert.
+
+| System | Start | Script |
+|---|---|---|
+| **Windows** | Doppelklick | [`starters/start-windows.bat`](starters/start-windows.bat) |
+| **Linux** | `bash starters/start-linux.sh` | [`starters/start-linux.sh`](starters/start-linux.sh) |
+| **macOS** | `bash starters/start-macos.sh` | [`starters/start-macos.sh`](starters/start-macos.sh) |
+
+**Anpassen:** Oben in jedem Script lassen sich `SERVER`, `MODEL` und `TPL` (Vorlage, Teilname reicht, z. B. `schreibhelfer`) ändern. Voreingestellt: Ollama lokal (`http://localhost:11434/v1`), `gemma3:4b`, Vorlage *Schreibhelfer (Textkorrektur)* – ein guter Start für Textkorrektur auf 8-GB-Laptops.
+
+**Wichtig – CORS:** Die Chat-Seite läuft lokal (`file://`), deshalb braucht Ollama `OLLAMA_ORIGINS=*`.
+
+- Die Scripts setzen die Variable selbst – aber nur für Ollama-Prozesse, die **vom Script gestartet** werden.
+- Läuft Ollama bei dir bereits im Hintergrund (Windows-Tray, systemd-Service, macOS-App mit Autostart), setze die Variable systemweit:
+  - **Windows:** Systemumgebungsvariable `OLLAMA_ORIGINS` = `*` setzen (Systemeinstellungen → Umgebungsvariablen), Ollama-App beenden und neu starten
+  - **Linux:** `sudo systemctl edit ollama` → `[Service]` + `Environment="OLLAMA_ORIGINS=*"` → `sudo systemctl restart ollama`
+  - **macOS:** `launchctl setenv OLLAMA_ORIGINS "*"` im Terminal, danach Ollama-App neu starten
+
+**Hinweis Windows:** Das Script nutzt `curl` (ab Windows 10 integriert). Sollte der Standard-Browser die Parameter hinter dem `?` verworfen, stehen im Script fertige Zeilen für Edge/Chrome bereit.
+
+### 🔗 Ohne Script: URL-Parameter
+
+Man kann die Datei auch direkt mit Parametern aufrufen – z. B. als Desktop-Verknüpfung:
+
+```
+index.html?server=http://localhost:11434/v1&model=gemma3:4b&tpl=schreibhelfer
+index.html?server=https://api.mistral.ai/v1&tpl=schreibhelfer
+```
+
+| Parameter | Wirkung |
+|---|---|
+| `server` | Profil-URL – existierendes Profil wird gewählt, sonst neu angelegt |
+| `model` | Modell wird vorausgewählt (sofern auf dem Server vorhanden) |
+| `tpl` | Vorlage per Teilname (Groß-/Kleinschreibung egal), z. B. `schreibhelfer`, `uebersetzer`, `kurz` |
+| `name` | Name für ein neu angelegtes Profil (optional) |
+| `key` | API-Key für ein Profil (optional, z. B. für Cloud-Shortcuts) |
+
+Die Einstellungen werden dabei in den normalen `localStorage` gespeichert – die Parameter sind nur der Startimpuls, danach funktioniert alles wie gewohnt.
 
 ## 🧩 Mit welchen KI-Servern kann man LocalhorstKI nutzen?
 
@@ -65,6 +107,7 @@ Die Seite funktioniert mit **allem, was die OpenAI-kompatible Chat-API anbietet*
 
 - **Homelab:** LM Studio auf dem Gaming-PC, LocalhorstKI auf Handy/Laptop/Tablet im WLAN – jede Rückfrage an lokale Modelle ohne Installation.
 - **Zweiter Rechner:** Ollama auf dem Homeserver, dieselbe Datei, anderes Server-Profil.
+- **Büro-Laptop / Schreibhelfer:** Einmal das Starter-Script anpassen – ab dann per Doppelklick Ollama + Gemma + Schreibhelfer-Vorlage in einem Rutsch.
 - **Cloud-Fähre:** Ein Mistral-Profil für Modelle, die lokal zu groß sind – die Seite kennzeichnet das Profil als Cloud, damit der Unterschied immer sichtbar bleibt.
 - **Familie/Freunde:** Einmal die Datei aushändigen, URL eintragen – keine Accounts, keine Installation.
 
@@ -92,6 +135,7 @@ Unvertrauenswürdige Eingaben (Modellausgaben) werden als HTML gerendert – des
 | Nur vom selben PC erreichbar | **Serve on Local Network** aktivieren; Firewall/Portfreigabe prüfen |
 | Cloud-Profil meldet Fehler | API-Key korrekt? URL mit `/v1`? Falls es an CORS liegt: Anbieter-Politik, nicht die Seite |
 | Kein Modell in der Auswahl | Server erreichbar, aber kein Modell geladen – Modell laden |
+| Starter öffnet Seite ohne Einstellungen | Browser verwirft evtl. URL-Parameter bei `file://` – im Script Browser explizit angeben (Windows/macOS, siehe Kommentare) |
 | Seite blockiert nach eigener Änderung | CSP-Hashes im `<meta>` neu berechnen (Konsole zeigt den erwarteten Hash) |
 | Verläufe weg | Anderer Browser/privater Modus – Verläufe liegen im `localStorage` des jeweiligen Browsers |
 

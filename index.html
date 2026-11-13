@@ -5,7 +5,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>LocalhorstKI</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-c7ypICvpaMQA6hPnA0bpQ+9DbARfGEl0XZyc9S1JXQY='; style-src 'sha256-BgK1Rmd5CVyHHcEiD1Jlp7zgTyRjruUefA0uVST2e5M='; img-src data: blob:; connect-src http: https:; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-1dNeJvCTwRT+YTVCjxbv5t+b4Gtoy9xRum9d6Z7UXB4='; style-src 'sha256-BgK1Rmd5CVyHHcEiD1Jlp7zgTyRjruUefA0uVST2e5M='; img-src data: blob:; connect-src http: https:; base-uri 'none'; form-action 'none'; object-src 'none'">
 <style>
   :root {
     --bg: #0f1117;
@@ -1223,12 +1223,51 @@
     for (var i = 0; i < ev.dataTransfer.files.length; i++) addFile(ev.dataTransfer.files[i]);
   });
 
+  /* ---------- URL-Parameter (Starter-Support) ---------- */
+  /* Beispiel: index.html?server=http://localhost:11434/v1&model=gemma3:4b&tpl=schreibhelfer
+     Optionale Parameter: server, model, tpl (Vorlagen-Name, Große/Klein egal, Teil reicht),
+     name (Profilname), key (API-Key). Nur Server + Vorlage? Geht auch ohne Modell. */
+  function applyUrlParams() {
+    if (!location.search) return;
+    var q = {};
+    location.search.slice(1).split("&").forEach(function (kv) {
+      var p = kv.split("=");
+      if (p[0]) q[decodeURIComponent(p[0])] = decodeURIComponent((p[1] || "").replace(/\+/g, " "));
+    });
+    if (q.server) {
+      var url = q.server.replace(/\/+$/, "");
+      var idx = -1;
+      settings.profiles.forEach(function (p, i) { if (p.url === url) idx = i; });
+      if (idx === -1) {
+        settings.profiles.push({ name: q.name || "Starter", url: url, apiKey: "", model: q.model || "" });
+        idx = settings.profiles.length - 1;
+      }
+      settings.profileIdx = idx;
+      if (q.model) settings.profiles[idx].model = q.model;
+      if (q.key) settings.profiles[idx].apiKey = q.key;
+    }
+    if (q.tpl) {
+      var n = String(q.tpl).toLowerCase();
+      for (var i = 0; i < TEMPLATES.length; i++) {
+        if (TEMPLATES[i].prompt && TEMPLATES[i].name.toLowerCase().indexOf(n) >= 0) { settings.system = TEMPLATES[i].prompt; break; }
+      }
+    }
+    saveSettings();
+  }
+  function syncTplSelect() {
+    for (var i = 0; i < TEMPLATES.length; i++) {
+      if (TEMPLATES[i].prompt && TEMPLATES[i].prompt === settings.system) { elTpl.selectedIndex = i; return; }
+    }
+  }
+
   /* ---------- Start ---------- */
   load();
+  applyUrlParams();
   applyTheme();
   applyAccent();
   renderSwatches();
   renderTemplates();
+  syncTplSelect();
   renderProfiles();
   updateCloudNote();
   elSystem.value = settings.system || "";
