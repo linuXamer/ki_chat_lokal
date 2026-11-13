@@ -16,6 +16,7 @@ Eine **einzige HTML-Datei**, die man direkt im Browser öffnet, um mit Modellen 
 - 📋 **Kopieren** (ganze Antwort oder einzelne Codeblöcke), **Neu generieren**, **Bearbeiten**
 - ⬇️ Chat als **Markdown** oder **JSON** exportieren
 - 🌙/☀️ **Dark/Light-Theme**, Avatare, Zeitstempel, „denkt nach…"-Indikator, optionaler Fertigstellungs-Sound
+- 🛡️ **Security**: siehe unten
 - 📱 Responsive – funktioniert auch auf dem Handy im WLAN
 
 ## 🚀 Schnellstart
@@ -43,6 +44,17 @@ Standard-Port: `1234`. Die Adresse deines Servers findest du in LM Studio (z. B.
 - LM Studio mit aktiviertem lokalen Server (OpenAI-kompatible API: `/v1/models`, `/v1/chat/completions`)
 - Die Seite spricht den Server über dessen **OpenAI-kompatible Endpunkte** an – funktioniert daher grundsätzlich auch mit anderen OpenAI-kompatiblen Servern im Netzwerk (z. B. llama.cpp, Ollama), sofern CORS aktiviert ist
 - Alles läuft im Browser: Einstellungen und Chats liegen im `localStorage` des Browsers
+
+### 🛡️ Security
+
+Unvertrauenswürdige Eingaben (Modellausgaben) werden als HTML gerendert – deshalb gilt ein zweistufiges Vorgehen:
+
+- **Escape-first-Markdown-Renderer**: Modelltext wird vollständig escaped (`<`, `>`, `"`, `&`), **bevor** der eigene Renderer ein whitelist-basiertes Markup ergänzt (nur `p, h2–h4, ul, ol, li, strong, em, code, pre, a, span`). Links nur mit `https?://`-Schema, kein Markdown-Bild-Syntax.
+- **Content-Security-Policy** als zweite Verteidigungslinie: `default-src 'none'` mit SHA-256-Hashes für das Inline-Script/-Style (für Ein-Datei-HTML ohne Server-Backend der geeignete Weg). Sollte doch etwas durchrutschen, blockiert der Browser die Ausführung.
+- **Kein `eval`, kein `document.write`, kein `outerHTML`/`insertAdjacentHTML`**; Titel, Status und Fehler laufen über `textContent`.
+- **Fremdcode: keiner.** Keine Bibliotheken, kein CDN (u. a. deshalb kein DOMPurify – der eigene Renderer + CSP übernehmen das; das hält die Datei single-file und abhängigkeitsfrei).
+
+**Hinweis:** Änderungen am `<script>`- oder `<style>`-Block ändern die CSP-Hashes – sie müssen dann neu berechnet werden (siehe Commit-Historie bzw. `openssl`/`sha256` über den Block-Inhalt).
 
 ### Probleme?
 
