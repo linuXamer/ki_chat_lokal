@@ -85,7 +85,9 @@ index.html?server=https://api.mistral.ai/v1&tpl=schreibhelfer
 | `tpl` | Vorlage per Teilname (Groß-/Kleinschreibung egal), z. B. `schreibhelfer`, `uebersetzer`, `kurz` |
 | `name` | Name für ein neu angelegtes Profil (optional) |
 | `key` | API-Key für ein Profil (optional, z. B. für Cloud-Shortcuts) |
-| `search=1` | 🔎 Websuche beim Start einschalten – nur wirksam, wenn in den Einstellungen ein Such-Anbieter (SearXNG/Tavily) gewählt ist |
+| `search=1` | 🔎 Websuche beim Start einschalten (wirksam, sobald ein Such-Anbieter gewählt ist – per Einstellung oder per `searx`/`tavily`-Parameter) |
+| `searx` | SearXNG als Such-Anbieter wählen + URL eintragen, z. B. `searx=http://vm:8080` |
+| `tavily` | Tavily als Such-Anbieter wählen + API-Key hinterlegen, z. B. `tavily=tvly-…` |
 
 Die Einstellungen werden dabei in den normalen `localStorage` gespeichert – die Parameter sind nur der Startimpuls, danach funktioniert alles wie gewohnt.
 
@@ -119,7 +121,7 @@ Danach in LocalhorstKI als Such-URL z. B. `http://dein-vm:8080` eintragen – ü
 
 ### Anbieter 2: Tavily (Cloud – 1.000 kostenlose Suchen/Monat)
 
-[Tavily](https://tavily.com) ist eine Such-API speziell für KI-Anwendungen: kein eigenes Hosting, ein API-Key genügt. Kostenloses Kontingent: **1.000 Credits/Monat**. Ein Key wird unter [app.tavily.com](https://app.tavily.com) erstellt und im Passwort-Feld hinterlegt.
+[Tavily](https://tavily.com) ist eine Such-API speziell für KI-Anwendungen: kein eigenes Hosting, ein API-Key genügt. Kostenloses Kontingent: **1.000 Credits/Monat**. Ein Key wird unter [app.tavily.com](https://app.tavily.com) erstellt und im Passwort-Feld hinterlegt. Für Desktop-Shortcuts lässt sich der Key auch per URL-Parameter `tavily=…` übergeben – er steht dann allerdings im Klartext im Link (nur auf eigenen Geräten).
 
 > ☁️ **Cloud-Hinweis:** Bei Tavily gehen Suchanfragen an einen externen Dienst (die Chat-Anfragen selbst bleiben unabhängig davon lokal). Die Seite kennzeichnet das im Einstellungsbereich.
 

@@ -5,7 +5,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>LocalhorstKI</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-3q614927mtgwd8RgfC7Cg5h4M27UNNEE9njCfpZT8e8='; style-src 'sha256-RLTFfNIVxhB9eGqrMrCS95NPyw2PrvOegjKC0ClYAnE='; img-src data: blob:; connect-src http: https:; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-IXHKn2PBbkxDh2D/DhIv0RM+6ighCJpDsYg3XroyWUI='; style-src 'sha256-RLTFfNIVxhB9eGqrMrCS95NPyw2PrvOegjKC0ClYAnE='; img-src data: blob:; connect-src http: https:; base-uri 'none'; form-action 'none'; object-src 'none'">
 <style>
   :root {
     --bg: #0f1117;
@@ -1402,7 +1402,8 @@
   /* ---------- URL-Parameter (Starter-Support) ---------- */
   /* Beispiel: index.html?server=http://localhost:11434/v1&model=gemma3:4b&tpl=schreibhelfer
      Optionale Parameter: server, model, tpl (Vorlagen-Name, Große/Klein egal, Teil reicht),
-     name (Profilname), key (API-Key), search=1 (Websuche aktivieren, wenn ein Anbieter gewählt ist). */
+     name (Profilname), key (API-Key), search=1 (Websuche aktivieren),
+     searx (SearXNG-URL) und tavily (Tavily API-Key) wählen den Such-Anbieter per Link. */
   function applyUrlParams() {
     if (!location.search) return;
     var q = {};
@@ -1428,6 +1429,8 @@
         if (TEMPLATES[i].prompt && TEMPLATES[i].name.toLowerCase().indexOf(n) >= 0) { settings.system = TEMPLATES[i].prompt; break; }
       }
     }
+    if (q.searx) { settings.websearch = "searxng"; settings.searxUrl = q.searx.replace(/\/+$/, ""); }
+    if (q.tavily) { settings.websearch = "tavily"; settings.tavilyKey = q.tavily; }
     if (q.search === "1" && settings.websearch !== "aus") settings.websearchOn = true;
     saveSettings();
   }
