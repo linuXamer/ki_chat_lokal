@@ -126,7 +126,7 @@ Danach in LocalhorstKI als Such-URL z. B. `http://dein-vm:8080` eintragen – ü
 ### Warum nicht Google/Brave/Exa?
 
 - **Brave Search API** und die meisten Google-Angebote erlauben **keine direkten Browser-Aufrufe** (fehlendes CORS) – sie brauchen immer einen Server dazwischen, was dem Ein-Datei-Prinzip widerspricht.
-- **Exa** funktioniert nur von echten `http(s)`-Origins, nicht von lokal geöffneten Dateien.
+- **Exa** erlaubt direkte Browser-Aufrufe nur von `localhost` bzw. dem eigenen Dashboard – nicht von Heimnetz-/Tailscale-IPs, Domains oder lokal geöffneten Dateien (live geprüft, Nov. 2026: Preflight ohne `Access-Control-Allow-Origin` für alle anderen Origins).
 - **SearXNG** (eigener Server) und **Tavily** (erlaubt Browser-Calls explizit) sind die beiden Anbieter, die ohne Zusatz-Server direkt aus der Datei funktionieren.
 
 ## 🧩 Mit welchen KI-Servern kann man LocalhorstKI nutzen?
