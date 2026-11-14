@@ -5,7 +5,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>LocalhorstKI</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-1dNeJvCTwRT+YTVCjxbv5t+b4Gtoy9xRum9d6Z7UXB4='; style-src 'sha256-BgK1Rmd5CVyHHcEiD1Jlp7zgTyRjruUefA0uVST2e5M='; img-src data: blob:; connect-src http: https:; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-d/1CzFu9WcKyD91JC5+HiX5eDIy4t4XHIb7sEwPddos='; style-src 'sha256-BgK1Rmd5CVyHHcEiD1Jlp7zgTyRjruUefA0uVST2e5M='; img-src data: blob:; connect-src http: https:; base-uri 'none'; form-action 'none'; object-src 'none'">
 <style>
   :root {
     --bg: #0f1117;
@@ -390,7 +390,7 @@
     { name: "Übersetzer", prompt: "Übersetze den gegebenen Text sauber und idiomatisch ins Deutsche. Gib ausschließlich die Übersetzung zurück, ohne Kommentare." },
     { name: "Kurz & knapp", prompt: "Antworte extrem kurz und sachlich. Keine Floskeln, keine Wiederholung der Frage, maximal 3 Sätze." },
     { name: "Lehrer / Erklärbär", prompt: "Erklare Dinge Schritt für Schritt und mit einfachen Beispielen, als würdest du es einem Neuling beibringen." },
-    { name: "Schreibhelfer (Textkorrektur)", prompt: "Du bist ein professioneller Lektor und Schreibassistent. Wenn der Nutzer dir einen Text schickt: 1) Gib zuerst die korrigierte Fassung des Textes aus (Rechtschreibung, Grammatik, Zeichensetzung, Stil und Verständlichkeit verbessern). 2) Liste danach kurz die wichtigsten Änderungen mit knapper Begründung. 3) Gib am Ende optional 1–2 Tipps, wie der Text noch besser wird. Bewahre Ton und Stimme des Nutzers bei und ändere den Inhalt nicht. @ki ist ein Exit-Code. Dann erwartet der User eine Antwort auf eine Frage und keine Korrektur oder gibt eine Anweisung." }
+    { name: "Schreibhelfer (Textkorrektur)", prompt: "Du bist ein professioneller Lektor und Schreibassistent. Wenn der Nutzer dir einen Text schickt: 1) Gib zuerst die korrigierte Fassung des Textes aus (Rechtschreibung, Grammatik, Zeichensetzung, Stil und Verständlichkeit verbessern). 2) Liste danach kurz die wichtigsten Änderungen mit knapper Begründung. 3) Gib am Ende optional 1–2 Tipps, wie der Text noch besser wird. Bewahre Ton und Stimme des Nutzers bei und ändere den Inhalt nicht." }
   ];
 
   function saveSettings() {
@@ -439,7 +439,14 @@
     if (settings.profileIdx >= settings.profiles.length) settings.profileIdx = 0;
     return settings.profiles[settings.profileIdx];
   }
-  function baseUrl() { return (prof().url || "").replace(/\/+$/, ""); }
+  function baseUrl() {
+    /* "/v1" am Ende ignorieren – mit oder ohne /v1 eingeben, beides geht
+       (LM Studio: http://IP:1234 · Ollama: http://IP:11434/v1 · Mistral: https://api.mistral.ai/v1).
+       Die App hängt die API-Pfade (/v1/models, /v1/chat/completions) selbst an. */
+    var u = (prof().url || "").replace(/\/+$/, "");
+    if (/\/v1$/i.test(u)) u = u.slice(0, -3);
+    return u;
+  }
   function headers() {
     var h = { "Content-Type": "application/json" };
     if (prof().apiKey) h["Authorization"] = "Bearer " + prof().apiKey;

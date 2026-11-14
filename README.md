@@ -89,7 +89,7 @@ Die Einstellungen werden dabei in den normalen `localStorage` gespeichert – di
 
 ## 🧩 Mit welchen KI-Servern kann man LocalhorstKI nutzen?
 
-Die Seite funktioniert mit **allem, was die OpenAI-kompatible Chat-API anbietet**. Ein Server-Profil anlegen (URL + ggf. API-Key), Modelle laden, fertig.
+Die Seite funktioniert mit **allem, was die OpenAI-kompatible Chat-API anbietet**. Ein Server-Profil anlegen (URL + ggf. API-Key), Modelle laden, fertig. Die URL kannst du **mit oder ohne `/v1`** eintragen – die App hängt die API-Pfade (`/v1/models`, `/v1/chat/completions`) selbst an.
 
 | Backend | URL / Port | Anmerkung |
 |---|---|---|
@@ -114,6 +114,7 @@ Die Seite funktioniert mit **allem, was die OpenAI-kompatible Chat-API anbietet*
 ## 🔧 Technik
 
 - Reiner Browser-Client (HTML/CSS/JS in einer Datei), spricht `/v1/models` und `/v1/chat/completions` mit SSE-Streaming
+- Profil-URLs funktionieren mit oder ohne `/v1`-Endung (die App normalisiert und ergänzt die API-Pfade selbst)
 - Einstellungen und Chats liegen im `localStorage` des Browsers – die Datei selbst ändert sich nie
 
 ### 🛡️ Security
