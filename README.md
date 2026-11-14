@@ -10,7 +10,7 @@ Eine einzige HTML-Datei, die man direkt im Browser öffnet, um mit lokalen Model
 
 *Localhost* – die Adresse, unter der jeder Homelab-Nerd zuhause ist – trifft auf *Horst* (deutscher Vorname, und zugleich der Nestbau-Ort des Wanderfalken 🐦) und *KI*. Der Name ist Programm: **Dein Rechner ist das Nest, deine Modelle wohnen drin.**
 
-## Warum heißt es nicht mehr „LM Studio Chat"? (Projekt-Geschichte)
+## Die Ide war ein „LM Studio Chat"? (Projekt-Geschichte)
 
 Dieses Projekt ist **aus der Praxis mit LM Studio entstanden**: Ich wollte eine einfache Webseite, die ich im Browser aufrufen kann, um direkt mit dem LM-Studio-Server in meinem Heimnetzwerk zu reden – inklusive Modell-Auswahl aus einer Auswahlliste. LM Studio war also der Anlass und bleibt der primäre Anwendungsfall (die Setup-Hinweise im Tool beziehen sich darauf).
 
