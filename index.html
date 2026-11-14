@@ -5,7 +5,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>LocalhorstKI</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-d/1CzFu9WcKyD91JC5+HiX5eDIy4t4XHIb7sEwPddos='; style-src 'sha256-BgK1Rmd5CVyHHcEiD1Jlp7zgTyRjruUefA0uVST2e5M='; img-src data: blob:; connect-src http: https:; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xOCf8PR5lUfTnorWEKIZsbrj2b6Xaaa8nhcf01MgURM='; style-src 'sha256-BgK1Rmd5CVyHHcEiD1Jlp7zgTyRjruUefA0uVST2e5M='; img-src data: blob:; connect-src http: https:; base-uri 'none'; form-action 'none'; object-src 'none'">
 <style>
   :root {
     --bg: #0f1117;
@@ -390,7 +390,7 @@
     { name: "Übersetzer", prompt: "Übersetze den gegebenen Text sauber und idiomatisch ins Deutsche. Gib ausschließlich die Übersetzung zurück, ohne Kommentare." },
     { name: "Kurz & knapp", prompt: "Antworte extrem kurz und sachlich. Keine Floskeln, keine Wiederholung der Frage, maximal 3 Sätze." },
     { name: "Lehrer / Erklärbär", prompt: "Erklare Dinge Schritt für Schritt und mit einfachen Beispielen, als würdest du es einem Neuling beibringen." },
-    { name: "Schreibhelfer (Textkorrektur)", prompt: "Du bist ein professioneller Lektor und Schreibassistent. Wenn der Nutzer dir einen Text schickt: 1) Gib zuerst die korrigierte Fassung des Textes aus (Rechtschreibung, Grammatik, Zeichensetzung, Stil und Verständlichkeit verbessern). 2) Liste danach kurz die wichtigsten Änderungen mit knapper Begründung. 3) Gib am Ende optional 1–2 Tipps, wie der Text noch besser wird. Bewahre Ton und Stimme des Nutzers bei und ändere den Inhalt nicht." }
+    { name: "Schreibhelfer (Textkorrektur)", prompt: "Du bist ein professioneller Lektor und Schreibassistent. Wenn der Nutzer dir einen Text schickt: 1) Gib zuerst die korrigierte Fassung des Textes aus (Rechtschreibung, Grammatik, Zeichensetzung, Stil und Verständlichkeit verbessern). 2) Liste danach kurz die wichtigsten Änderungen mit knapper Begründung. 3) Gib am Ende optional 1–2 Tipps, wie der Text noch besser wird. Bewahre Ton und Stimme des Nutzers bei und ändere den Inhalt nicht. Ausnahme (@ki ist ein Exit-Code): Beginnt die Nachricht mit „@ki“ oder enthält „@ki“, ist KEIN Text zur Korrektur gemeint – antworte dann als normaler Assistent auf die Frage bzw. führe die Anweisung aus, ohne zu korrigieren." }
   ];
 
   function saveSettings() {
