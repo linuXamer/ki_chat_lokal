@@ -27,6 +27,7 @@ Zwei Gründe für den neutralen Namen:
 - ⚙️ **Modell-Parameter**: Temperature, Top-P, Top-K, Seed, Max. Tokens, System-Prompt (mit Vorlagen, z. B. Schreibhelfer/Textkorrektur)
 - 🖥️ **Server-Profile** – mehrere Server speichern und per Dropdown wechseln, z. B. LM Studio im Büro, Ollama auf dem Homeserver, Mistral in der Cloud
 - ☁️ **Cloud-Kennzeichnung**: HTTPS-Profile werden als Cloud erkannt – mit Warnhinweis („Anfragen verlassen dein Heimnetz") und kompatibler Parameter-Auswahl (LM-Studio-Extras wie Top-K/Seed werden dann nicht gesendet)
+- 🔎 **Optionale Websuche** – per 🔍-Button zuschaltbar; Suchergebnisse werden dem Modell als Kontext mitgegeben, Quellen erscheinen als Chips unter der Antwort. Anbieter: **SearXNG (self-hosted, kostenlos)** oder **Tavily (1.000 kostenlose Suchen/Monat)** – Details siehe unten
 - 🔗 **URL-Parameter** – Server, Modell & Vorlage per Link vorkonfigurieren (`?server=…&model=…&tpl=…`) – die Basis für die Starter-Scripts
 - 📎 **Datei-Anhänge** – zwei Sorten:
   - **Bilder** (für Vision-Modelle): per 📎-Button, Strg+V (Screenshot) oder Drag & Drop
@@ -84,8 +85,49 @@ index.html?server=https://api.mistral.ai/v1&tpl=schreibhelfer
 | `tpl` | Vorlage per Teilname (Groß-/Kleinschreibung egal), z. B. `schreibhelfer`, `uebersetzer`, `kurz` |
 | `name` | Name für ein neu angelegtes Profil (optional) |
 | `key` | API-Key für ein Profil (optional, z. B. für Cloud-Shortcuts) |
+| `search=1` | 🔎 Websuche beim Start einschalten – nur wirksam, wenn in den Einstellungen ein Such-Anbieter (SearXNG/Tavily) gewählt ist |
 
 Die Einstellungen werden dabei in den normalen `localStorage` gespeichert – die Parameter sind nur der Startimpuls, danach funktioniert alles wie gewohnt.
+
+## 🔎 Websuche (optional)
+
+Lokale Modelle kennen nichts, was nach ihrem Trainingsdatum passiert ist. Deshalb kann man der aktuellen Nachricht Suchergebnisse mitgeben:
+
+1. In der Sidebar unter **„Websuche (optional)"** einen Anbieter wählen
+2. Im Eingabefeld den **🔍-Button** anklicken (pro Nachricht zuschaltbar, Standard: aus)
+3. Senden – vor der Generierung wird gesucht, die Treffer landen als Kontext im Prompt, und die Quellen erscheinen als klickbare Chips unter der Antwort
+
+Die Suche läuft **nur bei Nachrichten mit aktiviertem 🔍** – und sie mischt sich nicht in den System-Prompt: Der Suchkontext wird nur für die jeweilige Anfrage injiziert.
+
+### Anbieter 1: SearXNG (self-hosted – kostenlos, unbegrenzt)
+
+[SearXNG](https://docs.searxng.org/) ist eine Metasuchmaschine, die selbst gehostet wird – Suchanfragen gehen an **deinen** Server, nicht an einen Bezahldienst. Ideal fürs Homelab (Docker auf einem VM, erreichbar über Tailscale auch unterwegs).
+
+```bash
+docker run -d --name searxng -p 8080:8080 searxng/searxng
+```
+
+Zwei Dinge sind nötig, damit LocalhorstKI (und andere Browser-Clients) die JSON-API nutzen dürfen:
+
+- **JSON-Format freischalten:** In der `settings.yml` (im Docker-Container unter `/etc/searxng/settings.yml`, per Volume einbinden) unter `search:` → `formats:` den Eintrag `- json` ergänzen – sonst antwortet SearXNG mit **403**.
+- **CORS erlauben:** Die Seite fragt SearXNG direkt aus dem Browser an. Beim Reverse-Proxy (z. B. nginx/Plesk) einen Header setzen:
+  ```nginx
+  add_header Access-Control-Allow-Origin * always;
+  ```
+
+Danach in LocalhorstKI als Such-URL z. B. `http://dein-vm:8080` eintragen – über Tailscale auch von unterwegs.
+
+### Anbieter 2: Tavily (Cloud – 1.000 kostenlose Suchen/Monat)
+
+[Tavily](https://tavily.com) ist eine Such-API speziell für KI-Anwendungen: kein eigenes Hosting, ein API-Key genügt. Kostenloses Kontingent: **1.000 Credits/Monat**. Ein Key wird unter [app.tavily.com](https://app.tavily.com) erstellt und im Passwort-Feld hinterlegt.
+
+> ☁️ **Cloud-Hinweis:** Bei Tavily gehen Suchanfragen an einen externen Dienst (die Chat-Anfragen selbst bleiben unabhängig davon lokal). Die Seite kennzeichnet das im Einstellungsbereich.
+
+### Warum nicht Google/Brave/Exa?
+
+- **Brave Search API** und die meisten Google-Angebote erlauben **keine direkten Browser-Aufrufe** (fehlendes CORS) – sie brauchen immer einen Server dazwischen, was dem Ein-Datei-Prinzip widerspricht.
+- **Exa** funktioniert nur von echten `http(s)`-Origins, nicht von lokal geöffneten Dateien.
+- **SearXNG** (eigener Server) und **Tavily** (erlaubt Browser-Calls explizit) sind die beiden Anbieter, die ohne Zusatz-Server direkt aus der Datei funktionieren.
 
 ## 🧩 Mit welchen KI-Servern kann man LocalhorstKI nutzen?
 
@@ -136,6 +178,8 @@ Unvertrauenswürdige Eingaben (Modellausgaben) werden als HTML gerendert – des
 | Nur vom selben PC erreichbar | **Serve on Local Network** aktivieren; Firewall/Portfreigabe prüfen |
 | Cloud-Profil meldet Fehler | API-Key korrekt? URL mit `/v1`? Falls es an CORS liegt: Anbieter-Politik, nicht die Seite |
 | Kein Modell in der Auswahl | Server erreichbar, aber kein Modell geladen – Modell laden |
+| 🔎 Websuche: SearXNG meldet **403** | JSON-Format nicht freigeschaltet – in der SearXNG-`settings.yml` unter `search:` → `formats:` den Eintrag `- json` ergänzen und Container neu starten |
+| 🔎 Websuche: Suche lädt/endet nie | SearXNG per Reverse-Proxy? CORS-Header `Access-Control-Allow-Origin` am Proxy setzen (siehe Abschnitt Websuche) |
 | Starter öffnet Seite ohne Einstellungen | Browser verwirft evtl. URL-Parameter bei `file://` – im Script Browser explizit angeben (Windows/macOS, siehe Kommentare) |
 | Seite blockiert nach eigener Änderung | CSP-Hashes im `<meta>` neu berechnen (Konsole zeigt den erwarteten Hash) |
 | Verläufe weg | Anderer Browser/privater Modus – Verläufe liegen im `localStorage` des jeweiligen Browsers |

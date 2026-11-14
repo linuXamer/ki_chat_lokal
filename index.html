@@ -5,7 +5,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>LocalhorstKI</title>
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-xOCf8PR5lUfTnorWEKIZsbrj2b6Xaaa8nhcf01MgURM='; style-src 'sha256-BgK1Rmd5CVyHHcEiD1Jlp7zgTyRjruUefA0uVST2e5M='; img-src data: blob:; connect-src http: https:; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-3q614927mtgwd8RgfC7Cg5h4M27UNNEE9njCfpZT8e8='; style-src 'sha256-RLTFfNIVxhB9eGqrMrCS95NPyw2PrvOegjKC0ClYAnE='; img-src data: blob:; connect-src http: https:; base-uri 'none'; form-action 'none'; object-src 'none'">
 <style>
   :root {
     --bg: #0f1117;
@@ -209,6 +209,8 @@
     align-items: flex-end;
   }
   #attach { height: 48px; font-size: 17px; }
+  #webSearch { height: 48px; font-size: 17px; }
+  #webSearch.active { background: var(--accent2); border-color: var(--accent2); color: #fff; }
   #input { flex: 1; min-height: 48px; max-height: 220px; resize: none; line-height: 1.5; }
   #send { min-width: 108px; height: 48px; }
   #send.stop { background: var(--err); }
@@ -229,6 +231,14 @@
     border-radius: 8px; padding: 5px 10px; font-size: 12px; color: var(--muted);
   }
   .msg.user .chip { background: rgba(255,255,255,.16); border-color: rgba(255,255,255,.3); color: #fff; }
+  .search-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .search-chips a {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--panel2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 4px 9px; font-size: 11.5px;
+    color: var(--muted); text-decoration: none; max-width: 100%;
+  }
+  .search-chips a:hover { color: var(--accent); border-color: var(--accent); }
   .swatches { display: flex; gap: 7px; align-items: center; flex-wrap: wrap; }
   .sw { width: 26px; height: 26px; padding: 0; border-radius: 50%; border: 2px solid var(--border); cursor: pointer; }
   .sw.active { border-color: var(--text); }
@@ -239,7 +249,7 @@
 
 <aside id="sidebar">
   <div>
-    <h1>LocalhorstKI <span class="version-badge">v3</span></h1>
+    <h1>LocalhorstKI <span class="version-badge">v4</span></h1>
     <div class="sub">KI-Chat für dein Netzwerk – LM Studio, Ollama, Mistral &amp; Co.</div>
   </div>
 
@@ -312,6 +322,27 @@
 
   <hr />
 
+  <div class="sect">Websuche (optional)</div>
+  <div class="field">
+    <label for="searchProv">Anbieter</label>
+    <select id="searchProv">
+      <option value="aus">– aus –</option>
+      <option value="searxng">SearXNG (eigene Instanz)</option>
+      <option value="tavily">Tavily (API-Key)</option>
+    </select>
+  </div>
+  <div class="field" id="searxField">
+    <label for="searxUrl">SearXNG-URL</label>
+    <input id="searxUrl" placeholder="http://IP:8080 (LAN/Tailscale)" />
+  </div>
+  <div class="field" id="tavilyField">
+    <label for="tavilyKey">Tavily API-Key</label>
+    <input id="tavilyKey" type="password" placeholder="tvly-…" />
+  </div>
+  <div class="cloud-note" id="searchNote">Tavily = Cloud: Suchanfragen gehen an api.tavily.com. SearXNG läuft auf deinem Server.</div>
+
+  <hr />
+
   <div class="sect">Optik</div>
   <div class="field">
     <label>Akzentfarbe</label>
@@ -347,6 +378,7 @@
   </div>
   <div id="thumbs"></div>
   <div id="composer">
+    <button id="webSearch" class="ghost" title="Websuche für diese Nachricht (Anbieter links in den Einstellungen wählen)">🔍</button>
     <button id="attach" class="ghost" title="Datei anhängen (Bilder oder Textdateien)">📎</button>
     <textarea id="input" placeholder="Nachricht schreiben…"></textarea>
     <button id="send">Senden</button>
@@ -373,6 +405,10 @@
     maxTok: 2048,
     seed: -1,
     sound: false,
+    websearch: "aus",
+    searxUrl: "",
+    tavilyKey: "",
+    websearchOn: false,
     accent: "#4f6ee0"
   };
   var convos = [];
@@ -433,7 +469,10 @@
       elSeed = $("seed"), elMaxTok = $("maxTok"), elSound = $("sound"),
       elConvos = $("convos"), elMsgs = $("messages"), elInput = $("input"),
       elSend = $("send"), elTopModel = $("topModel"), elHint = $("hint"),
-      elThumbs = $("thumbs"), elFile = $("file"), elThemeBtn = $("themeBtn"), elCloudNote = $("cloudNote");
+      elThumbs = $("thumbs"), elFile = $("file"), elThemeBtn = $("themeBtn"), elCloudNote = $("cloudNote"),
+      elSearchProv = $("searchProv"), elSearxUrl = $("searxUrl"), elTavilyKey = $("tavilyKey"),
+      elWebSearch = $("webSearch"), elSearxField = $("searxField"), elTavilyField = $("tavilyField"),
+      elSearchNote = $("searchNote");
 
   function prof() {
     if (settings.profileIdx >= settings.profiles.length) settings.profileIdx = 0;
@@ -657,6 +696,11 @@
     }
     d.appendChild(body);
 
+    if (m.role === "assistant" && m.sources && m.sources.length) {
+      var srcChips = mkChipsRow(m.sources);
+      if (srcChips) d.appendChild(srcChips);
+    }
+
     if (m.stats) {
       var st = document.createElement("div");
       st.className = "stats";
@@ -753,6 +797,76 @@
   function updateCloudNote() {
     if (/^https:\/\//i.test(elUrl.value.trim())) elCloudNote.classList.remove("hidden");
     else elCloudNote.classList.add("hidden");
+  }
+
+  /* ---------- Websuche (optional: SearXNG oder Tavily) ---------- */
+  function renderSearchUI() {
+    elSearchProv.value = settings.websearch || "aus";
+    elSearxUrl.value = settings.searxUrl || "";
+    elTavilyKey.value = settings.tavilyKey || "";
+    var isSearx = settings.websearch === "searxng";
+    var isTav = settings.websearch === "tavily";
+    elSearxField.classList.toggle("hidden", !isSearx);
+    elTavilyField.classList.toggle("hidden", !isTav);
+    elSearchNote.classList.toggle("hidden", !isTav);
+    elWebSearch.classList.toggle("active", !!settings.websearchOn && settings.websearch !== "aus");
+  }
+  function webSearch(query, signal) {
+    if (settings.websearch === "searxng") {
+      var base = (settings.searxUrl || "").replace(/\/+$/, "");
+      if (!base) return Promise.reject(new Error("SearXNG-URL fehlt (Einstellungen → Websuche)"));
+      return fetch(base + "/search?q=" + encodeURIComponent(query) + "&format=json&language=de", {
+          signal: signal, headers: { "Accept": "application/json" }
+        })
+        .then(function (r) {
+          if (r.status === 403) throw new Error("403 – SearXNG verweigert JSON-Antworten (settings.yml: unter search:/formats: die Zeile „- json“ ergänzen)");
+          if (!r.ok) throw new Error("HTTP " + r.status);
+          return r.json();
+        })
+        .then(function (j) {
+          return (j.results || []).slice(0, 6).map(function (r) {
+            return { title: r.title || "", url: r.url || "", content: r.content || "" };
+          });
+        });
+    }
+    if (!settings.tavilyKey) return Promise.reject(new Error("Tavily API-Key fehlt (Einstellungen → Websuche)"));
+    return fetch("https://api.tavily.com/search", {
+        method: "POST",
+        signal: signal,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ api_key: settings.tavilyKey, query: query, max_results: 6, search_depth: "basic" })
+      })
+      .then(function (r) {
+        if (!r.ok) throw new Error("HTTP " + r.status + ((r.status === 401 || r.status === 403) ? " – API-Key prüfen" : ""));
+        return r.json();
+      })
+      .then(function (j) {
+        return (j.results || []).map(function (r) {
+          return { title: r.title || "", url: r.url || "", content: r.content || "" };
+        });
+      });
+  }
+  function buildSearchContext(rs) {
+    var out = "\n\n## Websuchergebnisse (für die aktuelle Frage):\n";
+    rs.forEach(function (r, i) {
+      out += "\n[" + (i + 1) + "] " + (r.title || "") + "\nQuelle: " + r.url + "\n" + (r.content || "").slice(0, 500) + "\n";
+    });
+    out += "\nNutze diese Ergebnisse als Wissensgrundlage für deine Antwort. Nenne verwendete Quellen als Markdown-Links. Wenn die Ergebnisse die Frage nicht beantworten, sag das offen.";
+    return out;
+  }
+  function mkChipsRow(rs) {
+    var row = document.createElement("div");
+    row.className = "search-chips";
+    (rs || []).forEach(function (s) {
+      if (!s || !/^https?:\/\//i.test(s.url || "")) return;
+      var a = document.createElement("a");
+      a.href = s.url;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = "🔗 " + (s.title || s.url).slice(0, 60);
+      row.appendChild(a);
+    });
+    return row.childNodes.length ? row : null;
   }
 
   /* ---------- Modelle laden ---------- */
@@ -888,7 +1002,6 @@
   function generate(convo) {
     var sys = elSystem.value.trim();
     var msgs = [];
-    if (sys) msgs.push({ role: "system", content: sys });
     for (var i = 0; i < convo.messages.length; i++) {
       var m = convo.messages[i];
       if (m.role === "user" || m.role === "assistant") {
@@ -914,7 +1027,40 @@
 
     var bubble = msgEl({ role: "assistant", content: "", time: nowTime() }, false, false);
     var bodyEl = bubble.querySelector(".body");
-    bodyEl.innerHTML = '<span class="dots"><i></i><i></i><i></i></span> <span class="typing">denkt nach…</span>';
+    var sources = null;
+
+    /* Websuche: läuft vor der Generierung, Ergebnisse werden als Kontext
+       in den System-Prompt injiziert (nur für diese Anfrage, nichts wird gespeichert außer den Quellen-Links). */
+    var last = convo.messages[convo.messages.length - 1];
+    var doSearch = settings.websearchOn && settings.websearch !== "aus" &&
+                   last && last.role === "user" && !!(last.content || "").trim();
+    var searchPromise;
+    if (doSearch) {
+      var sq = last.content.trim().slice(0, 400);
+      bodyEl.innerHTML = '<span class="dots"><i></i><i></i><i></i></span> <span class="typing">🔎 Websuche läuft…</span>';
+      searchPromise = webSearch(sq, abortCtl.signal).then(
+        function (rs) {
+          sources = rs;
+          var chips = mkChipsRow(rs);
+          if (chips) bubble.appendChild(chips);
+          scrollDown();
+        },
+        function (e) {
+          if (e && e.name === "AbortError") throw e;
+          var row = document.createElement("div");
+          row.className = "search-chips";
+          var warn = document.createElement("span");
+          warn.className = "chip";
+          warn.textContent = "⚠️ Websuche fehlgeschlagen: " + (e && e.message ? e.message : e);
+          row.appendChild(warn);
+          bubble.appendChild(row);
+          scrollDown();
+        }
+      );
+    } else {
+      bodyEl.innerHTML = '<span class="dots"><i></i><i></i><i></i></span> <span class="typing">denkt nach…</span>';
+      searchPromise = Promise.resolve();
+    }
     scrollDown();
 
     var cur = "";
@@ -945,17 +1091,25 @@
       st.textContent = statsLine;
       bubble.appendChild(st);
       if (!full) bodyEl.innerHTML = '<span class="typing">(keine Antwort erhalten)</span>';
-      convo.messages.push({ role: "assistant", content: full || "", time: nowTime(), stats: statsLine });
+      convo.messages.push({ role: "assistant", content: full || "", time: nowTime(), stats: statsLine, sources: sources });
       convo.updated = Date.now();
       saveConvos();
       if (settings.sound && full) beep();
     }
 
-    fetch(baseUrl() + "/v1/chat/completions", {
-      method: "POST",
-      headers: headers(),
-      signal: abortCtl.signal,
-      body: JSON.stringify(body)
+    searchPromise
+    .then(function () {
+      var fullSys = sys;
+      if (sources && sources.length) fullSys += buildSearchContext(sources);
+      if (fullSys) msgs.unshift({ role: "system", content: fullSys });
+      body.messages = msgs;
+      bodyEl.innerHTML = '<span class="dots"><i></i><i></i><i></i></span> <span class="typing">denkt nach…</span>';
+      return fetch(baseUrl() + "/v1/chat/completions", {
+        method: "POST",
+        headers: headers(),
+        signal: abortCtl.signal,
+        body: JSON.stringify(body)
+      });
     })
     .then(function (resp) {
       if (!resp.ok) {
@@ -1190,6 +1344,21 @@
   elSeed.addEventListener("change", function () { settings.seed = parseInt(elSeed.value, 10); if (isNaN(settings.seed)) settings.seed = -1; saveSettings(); });
   elMaxTok.addEventListener("change", function () { settings.maxTok = parseInt(elMaxTok.value, 10) || 2048; saveSettings(); });
   elSound.addEventListener("change", function () { settings.sound = elSound.checked; saveSettings(); });
+  elSearchProv.addEventListener("change", function () {
+    settings.websearch = elSearchProv.value;
+    if (settings.websearch === "aus") settings.websearchOn = false;
+    saveSettings(); renderSearchUI();
+  });
+  elSearxUrl.addEventListener("change", function () { settings.searxUrl = elSearxUrl.value.trim(); saveSettings(); });
+  elTavilyKey.addEventListener("change", function () { settings.tavilyKey = elTavilyKey.value.trim(); saveSettings(); });
+  elWebSearch.addEventListener("click", function () {
+    if (settings.websearch === "aus") {
+      setStatus("Websuche: Wähle zuerst einen Anbieter (Einstellungen → Websuche).", "err");
+      return;
+    }
+    settings.websearchOn = !settings.websearchOn;
+    saveSettings(); renderSearchUI();
+  });
   $("loadBtn").addEventListener("click", loadModels);
   $("newBtn").addEventListener("click", newChat);
   $("expMd").addEventListener("click", exportMarkdown);
@@ -1233,7 +1402,7 @@
   /* ---------- URL-Parameter (Starter-Support) ---------- */
   /* Beispiel: index.html?server=http://localhost:11434/v1&model=gemma3:4b&tpl=schreibhelfer
      Optionale Parameter: server, model, tpl (Vorlagen-Name, Große/Klein egal, Teil reicht),
-     name (Profilname), key (API-Key). Nur Server + Vorlage? Geht auch ohne Modell. */
+     name (Profilname), key (API-Key), search=1 (Websuche aktivieren, wenn ein Anbieter gewählt ist). */
   function applyUrlParams() {
     if (!location.search) return;
     var q = {};
@@ -1259,6 +1428,7 @@
         if (TEMPLATES[i].prompt && TEMPLATES[i].name.toLowerCase().indexOf(n) >= 0) { settings.system = TEMPLATES[i].prompt; break; }
       }
     }
+    if (q.search === "1" && settings.websearch !== "aus") settings.websearchOn = true;
     saveSettings();
   }
   function syncTplSelect() {
@@ -1276,6 +1446,7 @@
   renderTemplates();
   syncTplSelect();
   renderProfiles();
+  renderSearchUI();
   updateCloudNote();
   elSystem.value = settings.system || "";
   elTemp.value = settings.temp; elTempVal.textContent = settings.temp;
